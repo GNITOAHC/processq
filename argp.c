@@ -42,11 +42,7 @@ args_t argp_parse (int argc, char *argv[]) {
         }
     }
 
-    if (!valid || action == ACTION_NONE) {
-        return (args_t) {
-            .valid = 0,
-        };
-    }
+    if (!valid) return (args_t) { .valid = 0 };
 
     /* printf("PATH: %s\n", get_path()); */
     /* printf("TIME: %s\n", get_time()); */
