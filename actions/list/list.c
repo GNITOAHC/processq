@@ -37,5 +37,8 @@ int list () {
         printf("PID: %d, CMD: %s\n", pidinfo[i].pid, pidinfo[i].cmd);
     }
 
+    for (int i = 0; i < count; ++i) free(pidinfo[i].cmd);
+    free(pidinfo);
+
     return 0;
 }
