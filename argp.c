@@ -25,7 +25,7 @@ args_t argp_parse (int argc, char *argv[]) {
 
     while ((opt = getopt_long(argc, argv, short_options, long_options, &opt_index)) != -1) {
         switch (opt) {
-            case 'h': printf("%s\n", help_message); break;
+            case 'h': action = ACTION_HELP; break;
             case 'v': printf("Version %.1f\n", version); break;
             case 'c': printf("Config file: %s\n", optarg); break;
             case 'o':
