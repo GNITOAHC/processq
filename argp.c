@@ -27,7 +27,7 @@ args_t argp_parse (int argc, char *argv[]) {
         switch (opt) {
             case 'h': action = ACTION_HELP; break;
             case 'v': printf("Version %.1f\n", version); break;
-            case 'c': printf("Config file: %s\n", optarg); break;
+            case 'c': config_path = optarg; break;
             case 'o':
                 /* printf("Output directory: %s\n", optarg); */
                 out_path = optarg;
