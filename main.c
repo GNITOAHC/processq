@@ -40,10 +40,6 @@ int main (int argc, char *argv[]) {
                 exit(EXIT_FAILURE);
             }
             break;
-        case ACTION_HELP:
-            printf("%s\n", help_message);
-            printf("");
-            break;
         default: printf("Invalid action\n"); break;
     }
 

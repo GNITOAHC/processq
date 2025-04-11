@@ -7,6 +7,7 @@ typedef enum {
     ACTION_SUB,
     ACTION_LIST,
     ACTION_HELP,
+    ACTION_VERSION,
 } action_t;
 
 typedef struct {

@@ -1,5 +1,6 @@
 #include "argp.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
@@ -26,7 +27,7 @@ args_t argp_parse (int argc, char *argv[]) {
     while ((opt = getopt_long(argc, argv, short_options, long_options, &opt_index)) != -1) {
         switch (opt) {
             case 'h': action = ACTION_HELP; break;
-            case 'v': printf("Version %.1f\n", version); break;
+            case 'v': action = ACTION_VERSION; break;
             case 'c': config_path = optarg; break;
             case 'o':
                 /* printf("Output directory: %s\n", optarg); */
@@ -40,6 +41,13 @@ args_t argp_parse (int argc, char *argv[]) {
             case '?': valid = 0; break;
             default: printf("opt = %d\n", opt); break;
         }
+    }
+
+    /* Handle --help and --version */
+    switch (action) {
+        case ACTION_HELP: printf("%s\n", help_message); exit(EXIT_SUCCESS);
+        case ACTION_VERSION: printf("Version %.1f\n", version); exit(EXIT_SUCCESS);
+        default: break;
     }
 
     if (!valid) return (args_t) { .valid = 0 };
