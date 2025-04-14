@@ -46,7 +46,7 @@ args_t argp_parse (int argc, char *argv[]) {
     /* Handle --help and --version */
     switch (action) {
         case ACTION_HELP: printf("%s\n", help_message); exit(EXIT_SUCCESS);
-        case ACTION_VERSION: printf("Version %.1f\n", version); exit(EXIT_SUCCESS);
+        case ACTION_VERSION: printf("queue v%s\n", version); exit(EXIT_SUCCESS);
         default: break;
     }
 
