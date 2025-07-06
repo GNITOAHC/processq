@@ -7,10 +7,25 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+static short validate_pid_dir (const char *piddir) {
+    struct stat st = { 0 };
+    if (stat(piddir, &st) == -1) {
+        if (mkdir(piddir, 0700) == 0) {
+            return 1; // Directory created successfully
+        } else {
+            perror("mkdir");
+            return 0; // Failed to create directory
+        }
+    }
+    return 1; // Directory already exists
+}
+
 int write_pidfile (pid_t pid, char *cmd) {
     /* piddir and pidfile */
     char piddir[MAX_PATH_LEN];
     snprintf(piddir, MAX_PATH_LEN, "%s/.local/state/processq", getenv("HOME"));
+    if (validate_pid_dir(piddir) == 0) return -1;
+
     char pidfile[MAX_PATH_LEN];
     snprintf(pidfile, MAX_PATH_LEN, "%s/.local/state/processq/%d", getenv("HOME"), pid);
 
@@ -52,6 +67,7 @@ int remove_pidfile (pid_t pid) {
 pidinfo_t *read_pidfiles (int *array_len) {
     char piddir[MAX_PATH_LEN];
     snprintf(piddir, MAX_PATH_LEN, "%s/.local/state/processq", getenv("HOME"));
+    if (validate_pid_dir(piddir) == 0) return NULL;
 
     DIR *dir;
     if ((dir = opendir(piddir)) == NULL) { return NULL; }
