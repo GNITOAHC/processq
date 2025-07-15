@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 pid_t test (char *cmd, char *path_out, char *path_err) {
@@ -120,7 +121,7 @@ pid_t daemonize (char *cmd, char *path_out, char *path_err) {
     open(path_out, o, s);
     open(path_err, o, s);
 
-    execl("/bin/sh", "sh", "-c", cmd, (char *)NULL);
+    execl("/bin/bash", "bash", "-c", cmd, (char *)NULL);
 
     /*
      * Failed to execute if execl() returns:
