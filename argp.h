@@ -31,7 +31,7 @@ static struct option long_options[] = {
     {         0,                 0, 0,   0 }
 };
 
-static char version[] = "0.1.0";
+static char version[] = "0.1.1";
 
 static char short_options[] = "hvc:o:m:l";
 static char help_message[]  = "Usage: queue [OPTIONS]\n"
