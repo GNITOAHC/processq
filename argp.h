@@ -6,6 +6,7 @@ typedef enum {
     ACTION_NONE,
     ACTION_SUB,
     ACTION_LIST,
+    ACTION_STOP,
     ACTION_HELP,
     ACTION_VERSION,
 } action_t;
@@ -17,6 +18,8 @@ typedef struct {
     char *config_path, *out_path;
     /* The command to run */
     char *cmd;
+    /* The idx of the process to stop */
+    int stop_idx;
     /* Action to take */
     action_t action;
 } args_t;
@@ -27,6 +30,7 @@ static struct option long_options[] = {
     {  "config", required_argument, 0, 'c' },
     {     "out", required_argument, 0, 'o' },
     {     "cmd", required_argument, 0, 'm' },
+    {    "stop", required_argument, 0, 's' },
     {    "list",       no_argument, 0, 'l' },
     {         0,                 0, 0,   0 }
 };
@@ -41,6 +45,7 @@ static char help_message[]  = "Usage: queue [OPTIONS]\n"
                               "  -c, --config [FILE] \t\tSpecify a configuration file\n"
                               "  -o, --out [DIR]     \t\tSpecify a output directory\n"
                               "  -m, --cmd [COMMAND] \t\tSpecify a command to run\n"
-                              "  -l, --list          \t\tList all running processes\n";
+                              "  -l, --list          \t\tList all running processes\n"
+                              "  -s, --stop          \t\tStop specified running processes\n";
 
 args_t argp_parse(int argc, char *argv[]);

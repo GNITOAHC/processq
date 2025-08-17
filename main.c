@@ -1,4 +1,5 @@
 #include "./actions/list/list.h"
+#include "./actions/stop/stop.h"
 #include "./actions/submit/submit.h"
 #include "./config.h"
 #include "argp.h"
@@ -37,6 +38,13 @@ int main (int argc, char *argv[]) {
             printf("LIST COMMAND\n");
             if (list() < 0) {
                 perror("list commands failed");
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case ACTION_STOP:
+            printf("STOP: %d\n", args.stop_idx);
+            if (stop(args.stop_idx) < 0) {
+                perror("stop command failed");
                 exit(EXIT_FAILURE);
             }
             break;

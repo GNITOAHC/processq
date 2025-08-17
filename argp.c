@@ -21,6 +21,7 @@ args_t argp_parse (int argc, char *argv[]) {
     int valid = 1;
     char *cmd = NULL, *config_path = NULL, *out_path = NULL;
     char *invalid_message = NULL;
+    int stop_idx          = -1;
 
     action_t action = ACTION_NONE;
 
@@ -38,6 +39,10 @@ args_t argp_parse (int argc, char *argv[]) {
                 action = ACTION_SUB;
                 break;
             case 'l': action = ACTION_LIST; break;
+            case 's':
+                stop_idx = atoi(optarg);
+                action   = ACTION_STOP;
+                break;
             case '?': valid = 0; break;
             default: printf("opt = %d\n", opt); break;
         }
@@ -55,11 +60,10 @@ args_t argp_parse (int argc, char *argv[]) {
     /* printf("PATH: %s\n", get_path()); */
     /* printf("TIME: %s\n", get_time()); */
 
-    return (args_t) {
-        .valid       = 1,
-        .config_path = config_path,
-        .out_path    = out_path,
-        .cmd         = cmd,
-        .action      = action,
-    };
+    return (args_t) { .valid       = 1,
+                      .config_path = config_path,
+                      .out_path    = out_path,
+                      .cmd         = cmd,
+                      .action      = action,
+                      .stop_idx    = stop_idx };
 }

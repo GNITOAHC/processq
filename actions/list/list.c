@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
+static int sort_pidinfo (const void *a, const void *b) {
+    return ((pidinfo_t *)a)->pid - ((pidinfo_t *)b)->pid;
+}
+
 /* Return 1 if the process is alive, 0 if no such process, -1 if no permission to check. */
 static int check_alive (pid_t pid) {
     if (kill(pid, 0) == 0) { /* Process is alive */
@@ -33,11 +37,14 @@ int list () {
         return -1;
     }
 
+    qsort(pidinfo, count, sizeof(pidinfo_t), sort_pidinfo);
+
     for (int i = 0; i < count; ++i) {
-        printf("PID: %d, CMD: %s\n", pidinfo[i].pid, pidinfo[i].cmd);
+        printf("[%d] PID: %d, CMD: %s\n", i, pidinfo[i].pid, pidinfo[i].cmd);
     }
 
-    for (int i = 0; i < count; ++i) free(pidinfo[i].cmd);
+    for (int i = 0; i < count; ++i)
+        free(pidinfo[i].cmd);
     free(pidinfo);
 
     return 0;
