@@ -46,6 +46,6 @@ static char help_message[]  = "Usage: queue [OPTIONS]\n"
                               "  -o, --out [DIR]     \t\tSpecify a output directory\n"
                               "  -m, --cmd [COMMAND] \t\tSpecify a command to run\n"
                               "  -l, --list          \t\tList all running processes\n"
-                              "  -s, --stop          \t\tStop specified running processes\n";
+                              "  -s, --stop [IDX]    \t\tStop specified running processes\n";
 
 args_t argp_parse(int argc, char *argv[]);

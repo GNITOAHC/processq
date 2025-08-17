@@ -26,6 +26,7 @@ Options:
   -o, --out [DIR]               Specify a output directory
   -m, --cmd [COMMAND]           Specify a command to run
   -l, --list                    List all running processes
+  -s, --stop [IDX]              Stop a running process
 ```
 
 ## Test
