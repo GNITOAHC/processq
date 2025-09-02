@@ -267,10 +267,7 @@ int handle_list_command (int argc, char *argv[], g_config_t *global) {
             default: return 1;
         }
     }
-    if (optind >= argc) {
-        fprintf(stderr, "%s%s%s Missing required argument.\n", color_red, icon_x, color_reset);
-        return 1;
-    }
+
     printf("LIST COMMAND\n");
     if (list() < 0) {
         perror("list commands failed");
@@ -324,7 +321,7 @@ int handle_stop_command (int argc, char *argv[], g_config_t *global) {
         return 1;
     }
 
-    printf("  🔢 Parsed integer: %ld\n", value);
+    /* printf("Parsed integer: %ld\n", value); */
 
     printf("STOP: %ld\n", value);
     if (stop((int)value) < 0) {
