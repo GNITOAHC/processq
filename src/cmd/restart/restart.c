@@ -68,6 +68,7 @@ static int restart (const int restart_idx, const pid_t pid, const char *cmd) {
         return -1;
     }
     memcpy(cmd_copy, cmd, cmd_len);
+    cmd_copy[cmd_len] = '\0';
     printf("%s Executing: %s\n", icon_exe, cmd_copy);
     if (submit((subp_t) {
             .cmd    = cmd_copy,
