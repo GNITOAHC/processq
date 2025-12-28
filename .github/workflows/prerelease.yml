@@ -1,0 +1,145 @@
+name: Cross-Platform Build & Daily Pre-Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  # --------------------------------------------------------
+  # Generate daily release tag (only once)
+  # --------------------------------------------------------
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tagger.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate daily tag
+        id: tagger
+        run: |
+          TODAY=$(date +'%Y-%m-%d')
+          git fetch --tags
+
+          EXISTING=$(git tag | grep "^$TODAY-" | sort -t- -k4 -n || true)
+          if [ -z "$EXISTING" ]; then
+            N=1
+          else
+            LAST=$(echo "$EXISTING" | tail -1 | awk -F- '{print $4}')
+            N=$((LAST + 1))
+          fi
+
+          TAG="$TODAY-$N"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Generated tag: $TAG"
+
+  # --------------------------------------------------------
+  # Cross-platform build matrix
+  # --------------------------------------------------------
+  build:
+    needs: tag
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux AMD64
+          - os: ubuntu-latest
+            target_os: linux
+            target_arch: amd64
+            cc: gcc
+          # Linux ARM64 (Cross-compile)
+          - os: ubuntu-latest
+            target_os: linux
+            target_arch: arm64
+            cc: aarch64-linux-gnu-gcc
+            install_deps: |
+              sudo apt-get update
+              sudo apt-get install -y gcc-aarch64-linux-gnu
+          # Darwin AMD64
+          - os: macos-13
+            target_os: darwin
+            target_arch: amd64
+            cc: gcc
+          # Darwin ARM64
+          - os: macos-14
+            target_os: darwin
+            target_arch: arm64
+            cc: gcc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        if: matrix.install_deps
+        run: ${{ matrix.install_deps }}
+
+      - name: Build with compile.sh
+        shell: bash
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          chmod +x compile.sh
+          ./compile.sh
+
+      - name: Package Binary
+        shell: bash
+        run: |
+          VERSION="${{ needs.tag.outputs.tag }}"
+          TARGET="queue"
+          OS="${{ matrix.target_os }}"
+          ARCH="${{ matrix.target_arch }}"
+          
+          # The compile.sh output is bin/main
+          if [ -f "bin/main" ]; then
+            mkdir -p staging
+            cp "bin/main" "staging/$TARGET"
+          else
+            echo "Error: Binary not found in bin/"
+            ls -R bin/
+            exit 1
+          fi
+
+          ARCHIVE_NAME="$TARGET-$VERSION-$OS-$ARCH.tar.gz"
+          tar -czf "$ARCHIVE_NAME" -C staging "$TARGET"
+          echo "Created archive: $ARCHIVE_NAME"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: queue-${{ matrix.target_os }}-${{ matrix.target_arch }}
+          path: queue-*-${{ matrix.target_os }}-${{ matrix.target_arch }}.tar.gz
+
+  # --------------------------------------------------------
+  # Release job (runs after all binaries finish)
+  # --------------------------------------------------------
+  release:
+    needs: [build, tag]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Display structure of downloaded files
+        run: ls -R dist
+
+      - name: Create GitHub Pre-Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.tag.outputs.tag }}
+          name: "Automated Cross-Platform Release ${{ needs.tag.outputs.tag }}"
+          prerelease: true
+          files: |
+            dist/**/*.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
