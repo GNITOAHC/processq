@@ -1,0 +1,106 @@
+name: Production Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  # --------------------------------------------------------
+  # Cross-platform build matrix
+  # --------------------------------------------------------
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux AMD64
+          - os: ubuntu-latest
+            target_os: linux
+            target_arch: amd64
+            cc: gcc
+          # Linux ARM64 (Cross-compile)
+          - os: ubuntu-latest
+            target_os: linux
+            target_arch: arm64
+            cc: aarch64-linux-gnu-gcc
+            install_deps: |
+              sudo apt-get update
+              sudo apt-get install -y gcc-aarch64-linux-gnu
+          # Darwin ARM64
+          - os: macos-14
+            target_os: darwin
+            target_arch: arm64
+            cc: gcc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        if: matrix.install_deps
+        run: ${{ matrix.install_deps }}
+
+      - name: Build with compile.sh
+        shell: bash
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          chmod +x compile.sh
+          ./compile.sh
+
+      - name: Package Binary
+        shell: bash
+        run: |
+          VERSION="${{ github.ref_name }}"
+          TARGET="queue"
+          OS="${{ matrix.target_os }}"
+          ARCH="${{ matrix.target_arch }}"
+          
+          # The compile.sh output is bin/main
+          if [ -f "bin/main" ]; then
+            mkdir -p staging
+            cp "bin/main" "staging/$TARGET"
+          else
+            echo "Error: Binary not found in bin/"
+            ls -R bin/
+            exit 1
+          fi
+
+          ARCHIVE_NAME="$TARGET-$VERSION-$OS-$ARCH.tar.gz"
+          tar -czf "$ARCHIVE_NAME" -C staging "$TARGET"
+          echo "Created archive: $ARCHIVE_NAME"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: queue-${{ matrix.target_os }}-${{ matrix.target_arch }}
+          path: queue-*-${{ matrix.target_os }}-${{ matrix.target_arch }}.tar.gz
+
+  # --------------------------------------------------------
+  # Release job (runs after all binaries finish)
+  # --------------------------------------------------------
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Display structure of downloaded files
+        run: ls -R dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Release ${{ github.ref_name }}"
+          prerelease: false
+          files: |
+            dist/**/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
