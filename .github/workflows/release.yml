@@ -82,6 +82,8 @@ jobs:
   # Release job (runs after all binaries finish)
   # --------------------------------------------------------
   release:
+    permissions:
+      contents: write
     needs: build
     runs-on: ubuntu-latest
 
