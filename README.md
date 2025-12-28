@@ -1,6 +1,6 @@
 # Processq
 
-A simple binary that can submit process to local machine's background.
+Sometimes we want to run a service or a task in the background, but writing a systemd configuration or using Docker is overkill when all we need is a simple, long-running daemon. This is where `queue` steps in. It runs processes in the background and provides straightforward commands to manage them.
 
 ## Installation
 
@@ -18,19 +18,21 @@ brew install gnitoahc/tap/queue
 ## Usage
 
 ```
-Usage: queue [OPTIONS]
-Options:
-  -h, --help                    Display this help message
-  -v, --version                 Display version information
-  -c, --config [FILE]           Specify a configuration file (WIP)
-  -o, --out [DIR]               Specify a output directory
-  -m, --cmd [COMMAND]           Specify a command to run
-  -l, --list                    List all running processes
-  -s, --stop [IDX]              Stop a running process
+Usage: queue [flags] <command>
+
+Flags:
+  -h, --help            Show this help message
+  -v, --version         Enable verbose output
+
+Commands:
+  submit, s       Submit a task
+  list, l         List all running processes
+  stop, t         Stop a running process
+  restart, r      Restart a running process
 ```
 
 ## Test
 
 ```
-make && ./bin/main --cmd "bash test.sh"
+sh compile.sh && ./bin/main submit "bash test.sh"
 ```
