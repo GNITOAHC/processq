@@ -2,6 +2,7 @@
 mkdir -p obj bin
 
 CC=${CC:-gcc}
+VERSION_FLAG=${VERSION:+-DVERSION=\"$VERSION\"}
 
 $CC -c src/cmd/list/list.c -o obj/list.o
 $CC -c src/cmd/submit/submit.c -o obj/submit.o
@@ -19,6 +20,6 @@ $CC -c actions/list/list.c -o obj/action_list.o
 $CC -c actions/submit/submit.c -o obj/action_submit.o
 $CC -c actions/stop/stop.c -o obj/action_stop.o
 
-$CC -c src/main.c -o obj/main.o
+$CC $VERSION_FLAG -c src/main.c -o obj/main.o
 
 $CC obj/*.o -o bin/main

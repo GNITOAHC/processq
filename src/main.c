@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef VERSION
+#define VERSION "dev"
+#endif
+
 #include "./cmd/list/list.h"
 #include "./cmd/restart/restart.h"
 #include "./cmd/stop/stop.h"
@@ -56,7 +60,7 @@ int parse_root_options (int argc, char *argv[]) {
     while ((opt = getopt_long(argc, argv, "+hv", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'h': print_usage(argv[0]); exit(0);
-            case 'v': printf("processq v2.0\n"); exit(0);
+            case 'v': printf("processq %s\n", VERSION); exit(0);
             case '?': return optind - 1;
             default: return optind - 1;
         }

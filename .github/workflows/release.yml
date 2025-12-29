@@ -46,6 +46,7 @@ jobs:
         shell: bash
         env:
           CC: ${{ matrix.cc }}
+          VERSION: ${{ github.ref_name }}
         run: |
           chmod +x compile.sh
           ./compile.sh
