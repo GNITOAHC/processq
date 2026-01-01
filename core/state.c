@@ -1,3 +1,4 @@
+#include "../globals.h"
 #include "state.h"
 
 #include <dirent.h>
@@ -20,7 +21,7 @@ static short validate_pid_dir (const char *piddir) {
     return 1; // Directory already exists
 }
 
-int write_pidfile (pid_t pid, char *cmd) {
+int write_pidfile (pid_t pid, pid_t monitor_pid, char *cmd) {
     /* piddir and pidfile */
     char piddir[MAX_PATH_LEN];
     snprintf(piddir, MAX_PATH_LEN, "%s/.local/state/processq", getenv("HOME"));
@@ -40,8 +41,8 @@ int write_pidfile (pid_t pid, char *cmd) {
         return -1;
     }
 
-    /* Write command to the pidfile */
-    if (dprintf(fd, "%s\n", cmd) < 0) {
+    /* Write monitor_pid and command to the pidfile */
+    if (dprintf(fd, "%d\n%s\n", monitor_pid, cmd) < 0) {
         perror("write to pidfile");
         return -1;
     }
@@ -90,12 +91,26 @@ pidinfo_t *read_pidfiles (int *array_len) {
             perror("fopen");
             return NULL;
         }
+        /* Read monitor_pid (first line) */
+        char *monitor_pid_line = NULL;
+        size_t monitor_len     = 0;
+        if (getline(&monitor_pid_line, &monitor_len, file) == -1) {
+            perror("getline monitor_pid");
+            fclose(file);
+            return NULL;
+        }
+        pid_t monitor_pid = atoi(monitor_pid_line);
+        free(monitor_pid_line);
+
+        /* Read command (second line) */
         char *cmd  = NULL;
         size_t len = 0;
         if (getline(&cmd, &len, file) == -1) {
-            perror("getline");
+            perror("getline cmd");
+            fclose(file);
             return NULL;
         }
+
         /* Resize the pidinfos array if ++len == cap */
         if (info_len + 1 == info_cap) {
             info_cap *= 2;
@@ -103,8 +118,9 @@ pidinfo_t *read_pidfiles (int *array_len) {
         }
 
         pidinfos[info_len++] = (pidinfo_t) {
-            .pid = pid,
-            .cmd = cmd,
+            .pid         = pid,
+            .monitor_pid = monitor_pid,
+            .cmd         = cmd,
         };
 
         /* printf("PID: %d, CMD: %s\n", pid, cmd); */

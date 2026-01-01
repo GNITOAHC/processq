@@ -3,6 +3,7 @@
 #include "submit.h"
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,7 +66,7 @@ int submit (subp_t p) {
     printf("OUT: %s\n", path_out);
     printf("ERR: %s\n", path_err);
 
-    pid_t pid = daemonize(p.cmd, path_out, path_err);
+    pid_t pid = daemonize(p.cmd, path_out, path_err, p.restart);
 
     free(path_out);
     free(path_err);

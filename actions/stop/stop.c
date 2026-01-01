@@ -37,8 +37,13 @@ int stop (const int stop_idx) {
         exit(EXIT_FAILURE);
     }
 
+    /* Send a SIGTERM to the monitor process */
+    if (stop_pidinfo->monitor_pid > 0) {
+        if (kill(stop_pidinfo->monitor_pid, SIGTERM) < 0) { perror("kill monitor"); }
+    }
+
     if (kill(stop_pidinfo->pid, SIGTERM) < 0) {
-        perror("kill");
+        perror("kill child");
         return -1;
     }
     printf("Process stopped\n");
