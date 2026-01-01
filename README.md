@@ -1,5 +1,7 @@
 # Processq
 
+[![Production Release](https://github.com/GNITOAHC/processq/actions/workflows/release.yml/badge.svg)](https://github.com/GNITOAHC/processq/actions/workflows/release.yml)
+
 Sometimes we want to run a service or a task in the background, but writing a systemd configuration or using Docker is overkill when all we need is a simple, long-running daemon. This is where `queue` steps in. It runs processes in the background and provides straightforward commands to manage them.
 
 ## Installation
