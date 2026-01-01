@@ -25,10 +25,10 @@ Flags:
   -v, --version         Enable verbose output
 
 Commands:
-  submit, s       Submit a task
-  list, l         List all running processes
-  stop, t         Stop a running process
-  restart, r      Restart a running process
+  submit, sub, s     Submit a task
+  list, l, ls        List all running processes
+  stop, t, x         Stop a running process
+  restart, r         Restart a running process
 ```
 
 ## Test

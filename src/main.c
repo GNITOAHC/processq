@@ -20,11 +20,11 @@ typedef struct {
 } cmd_t;
 
 static const cmd_t subcommands[] = {
-    {  "submit, s",              "Submit a task",  handle_submit_command },
-    {    "list, l", "List all running processes",    handle_list_command },
-    {    "stop, t",     "Stop a running process",    handle_stop_command },
-    { "restart, r",  "Restart a running process", handle_restart_command },
-    {         NULL,                         NULL,                   NULL }
+    { "submit, sub, s",              "Submit a task",  handle_submit_command },
+    {    "list, l, ls", "List all running processes",    handle_list_command },
+    {     "stop, t, x",     "Stop a running process",    handle_stop_command },
+    {     "restart, r",  "Restart a running process", handle_restart_command },
+    {             NULL,                         NULL,                   NULL }
 };
 static const char alias_separator = ',';
 
@@ -39,7 +39,7 @@ void print_usage (const char *program_name) {
 
     printf("Commands:\n");
     for (const cmd_t *cmd = subcommands; cmd->name != NULL; cmd++) {
-        printf("  %-12s    %s\n", cmd->name, cmd->description);
+        printf("  %-15s    %s\n", cmd->name, cmd->description);
     }
 }
 
