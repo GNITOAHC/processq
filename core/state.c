@@ -8,10 +8,16 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+static int mkdir_p (const char *path, mode_t _mode) {
+    char cmd[1024];
+    snprintf(cmd, sizeof(cmd), "mkdir -p \"%s\"", path);
+    return system(cmd);
+}
+
 static short validate_pid_dir (const char *piddir) {
     struct stat st = { 0 };
     if (stat(piddir, &st) == -1) {
-        if (mkdir(piddir, 0700) == 0) {
+        if (mkdir_p(piddir, 0700) == 0) {
             return 1; // Directory created successfully
         } else {
             perror("mkdir");
