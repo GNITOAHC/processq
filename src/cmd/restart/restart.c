@@ -15,7 +15,8 @@
 #include "../../../render/icons.h"
 #include "./restart.h"
 
-static char *outdir = NULL;
+static char *outdir     = NULL;
+static int restart_flag = 0;
 
 static void print_helper (const char *program_name) {
     printf("Usage: %s [OPTIONS] [command]\n\n", program_name);
@@ -28,18 +29,23 @@ static void print_helper (const char *program_name) {
 static int parse_options (int argc, char *argv[]) {
     int opt;
     static struct option long_options[] = {
-        { "help",       no_argument, 0, 'h' },
-        {  "out", required_argument, 0, 'o' },
-        {      0,                 0, 0,   0 }
+        {    "help",       no_argument, 0, 'h' },
+        {     "out", required_argument, 0, 'o' },
+        { "restart",       no_argument, 0, 'r' },
+        {         0,                 0, 0,   0 }
     };
     optind = 1; /* Reset for subcommand parsing */
     opterr = 1; /* Enable error messages */
     while ((opt = getopt_long(argc, argv, "ho:", long_options, NULL)) != -1) {
         switch (opt) {
-            case 'h': print_helper(argv[0]); break;
+            case 'h': print_helper(argv[0]); return 0;
             case 'o':
                 outdir = optarg;
                 printf("Output directory: %s\n", outdir);
+                break;
+            case 'r':
+                printf("Restart on exit enabled.\n");
+                restart_flag = 1;
                 break;
             case '?':
             default: return -1;
@@ -71,8 +77,9 @@ static int restart (const int restart_idx, const pid_t pid, const char *cmd) {
     cmd_copy[cmd_len] = '\0';
     printf("%s Executing: %s\n", icon_exe, cmd_copy);
     if (submit((subp_t) {
-            .cmd    = cmd_copy,
-            .outdir = outdir,
+            .cmd     = cmd_copy,
+            .outdir  = outdir,
+            .restart = restart_flag,
         }) < 1) {
         perror("submit");
         return 1;
