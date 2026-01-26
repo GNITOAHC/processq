@@ -6,9 +6,17 @@ Sometimes we want to run a service or a task in the background, but writing a sy
 
 ## Installation
 
-### Pre-built binaries
+### Quick Install
 
-Pre-built binaries are available on the [releases page](https://github.com/GNITOAHC/processq/releases)
+```bash
+curl -LsSf https://raw.githubusercontent.com/GNITOAHC/processq/main/install.sh | sh
+```
+
+or using `wget`:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/GNITOAHC/processq/main/install.sh | sh
+```
 
 ### Homebrew
 
@@ -16,6 +24,10 @@ Pre-built binaries are available on the [releases page](https://github.com/GNITO
 brew tap gnitoahc/tap
 brew install gnitoahc/tap/queue
 ```
+
+### Pre-built binaries
+
+Pre-built binaries are also available on the [releases page](https://github.com/GNITOAHC/processq/releases).
 
 ## Usage
 
