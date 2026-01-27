@@ -19,7 +19,7 @@ static char *outdir     = NULL;
 static int restart_flag = 0;
 
 static void print_helper (const char *program_name) {
-    printf("Usage: %s [OPTIONS] [command]\n\n", program_name);
+    printf("Usage: %s [OPTIONS] [RESTART_INDEX]\n\n", program_name);
     static char options_usage[] = "Options:\n"
                                   "  -h, --help     \t\tShow this help message\n"
                                   "  -o, --out DIR  \t\tOutput directory\n"
