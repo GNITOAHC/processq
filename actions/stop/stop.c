@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 static int sort_pidinfo (const void *a, const void *b) {
-    return ((pidinfo_t *)a)->pid - ((pidinfo_t *)b)->pid;
+    return ((pidinfo_t *)a)->parent_pid - ((pidinfo_t *)b)->parent_pid;
 }
 
 int stop (const int stop_idx) {
@@ -26,7 +26,8 @@ int stop (const int stop_idx) {
     qsort(pidinfo, count, sizeof(pidinfo_t), sort_pidinfo);
     const pidinfo_t *stop_pidinfo = &pidinfo[stop_idx];
 
-    printf("STOPPING: [%d] PID: %d, CMD: %s\n", stop_idx, stop_pidinfo->pid, stop_pidinfo->cmd);
+    printf("STOPPING: [%d] Parent: %d, Child: %d, CMD: %s", stop_idx, stop_pidinfo->parent_pid,
+           stop_pidinfo->child_pid, stop_pidinfo->cmd);
     printf("Are you sure you want to stop this process? (y/n) ");
 
     int c = getchar();
@@ -37,12 +38,12 @@ int stop (const int stop_idx) {
         exit(EXIT_FAILURE);
     }
 
-    /* Send a SIGTERM to the monitor process */
-    if (stop_pidinfo->monitor_pid > 0) {
-        if (kill(stop_pidinfo->monitor_pid, SIGTERM) < 0) { perror("kill monitor"); }
+    /* Send a SIGTERM to the parent (monitor) process */
+    if (stop_pidinfo->parent_pid > 0) {
+        if (kill(stop_pidinfo->parent_pid, SIGTERM) < 0) { perror("kill monitor"); }
     }
 
-    if (kill(stop_pidinfo->pid, SIGTERM) < 0) {
+    if (kill(stop_pidinfo->child_pid, SIGTERM) < 0) {
         perror("kill child");
         return -1;
     }

@@ -56,7 +56,7 @@ static int parse_options (int argc, char *argv[]) {
 }
 
 static int sort_pidinfo (const void *a, const void *b) {
-    return ((pidinfo_t *)a)->pid - ((pidinfo_t *)b)->pid;
+    return ((pidinfo_t *)a)->parent_pid - ((pidinfo_t *)b)->parent_pid;
 }
 
 static int restart (const int restart_idx, const pid_t pid, const char *cmd) {
@@ -128,14 +128,14 @@ int handle_restart_command (int argc, char *argv[], void *config) {
     qsort(pidinfo, count, sizeof(pidinfo_t), sort_pidinfo);
     const pidinfo_t *restart_pidinfo = &pidinfo[restart_idx];
 
-    printf("RESTARTING: [%d] PID: %d, CMD: %s\n", restart_idx, restart_pidinfo->pid,
-           restart_pidinfo->cmd);
+    printf("RESTARTING: [%d] Parent: %d, Child: %d, CMD: %s", restart_idx, restart_pidinfo->parent_pid,
+           restart_pidinfo->child_pid, restart_pidinfo->cmd);
     printf("Are you sure you want to restart this process? (y/N) ");
 
     int c = getchar();
     if (c == 'y' || c == 'Y') {
         printf("Restarting process...\n");
-        return restart(restart_idx, restart_pidinfo->pid, restart_pidinfo->cmd);
+        return restart(restart_idx, restart_pidinfo->child_pid, restart_pidinfo->cmd);
     } else {
         printf("Process not restarted\n");
         exit(EXIT_FAILURE);

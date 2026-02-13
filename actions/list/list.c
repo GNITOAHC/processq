@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 
 static int sort_pidinfo (const void *a, const void *b) {
-    return ((pidinfo_t *)a)->pid - ((pidinfo_t *)b)->pid;
+    return ((pidinfo_t *)a)->parent_pid - ((pidinfo_t *)b)->parent_pid;
 }
 
 /* Return 1 if the process is alive, 0 if no such process, -1 if no permission to check. */
@@ -40,7 +40,8 @@ int list () {
     qsort(pidinfo, count, sizeof(pidinfo_t), sort_pidinfo);
 
     for (int i = 0; i < count; ++i) {
-        printf("[%d] PID: %d, CMD: %s\n", i, pidinfo[i].pid, pidinfo[i].cmd);
+        printf("[%d] Parent: %d, Child: %d, CMD: %s", i, pidinfo[i].parent_pid,
+               pidinfo[i].child_pid, pidinfo[i].cmd);
     }
 
     for (int i = 0; i < count; ++i)
