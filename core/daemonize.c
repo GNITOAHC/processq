@@ -64,8 +64,59 @@ static void log (const char *path_err, enum log_level l, const char *message) {
     close(fd);
 }
 
+static int mkdir_p (const char *path, mode_t _mode) {
+    char cmd[1024];
+    snprintf(cmd, sizeof(cmd), "mkdir -p \"%s\"", path);
+    return system(cmd);
+}
+/* Validate the output/error path and ensure the parent directory exists, return 0 on failure */
+static short validate_path (const char *path) {
+    if (path == NULL || strlen(path) == 0) { return 0; }
+
+    /* Find the last '/' to extract parent directory */
+    const char *last_slash = strrchr(path, '/');
+    if (last_slash == NULL) {
+        /* No directory component, file will be in current directory */
+        return 1;
+    }
+
+    /* Extract parent directory path */
+    size_t dir_len = last_slash - path;
+    if (dir_len == 0) {
+        /* Path starts with '/', parent is root which always exists */
+        return 1;
+    }
+
+    char parent_dir[1024];
+    if (dir_len >= sizeof(parent_dir)) { return 0; /* Path too long */ }
+
+    strncpy(parent_dir, path, dir_len);
+    parent_dir[dir_len] = '\0';
+
+    /* Check if directory exists */
+    struct stat st;
+    if (stat(parent_dir, &st) == 0 && S_ISDIR(st.st_mode)) {
+        return 1; /* Directory already exists */
+    }
+
+    /* Try to create the directory */
+    if (mkdir_p(parent_dir, 0755) != 0) { return 0; /* Failed to create directory */ }
+
+    return 1; /* Success */
+}
+
 pid_t daemonize (char *cmd, char *path_out, char *path_err, bool restart) {
     pid_t pid;
+
+    /* Make sure the output path's parent directory exists */
+    if (validate_path(path_out) == 0) {
+        printf("Failed to create parent directory for: %s\n", path_out);
+        exit(EXIT_FAILURE);
+    }
+    if (validate_path(path_err) == 0) {
+        printf("Failed to create parent directory for: %s\n", path_err);
+        exit(EXIT_FAILURE);
+    }
 
     /* First fork, create a background process */
     pid = fork();
@@ -114,7 +165,8 @@ pid_t daemonize (char *cmd, char *path_out, char *path_err, bool restart) {
             }
 
             if (restart && !stop_requested) {
-                log(path_err, LOG_INFO, "Restarting process");
+                log(path_err, LOG_INFO, "Restarting process in 5 seconds");
+                sleep(5);
                 continue;
             }
             log(path_err, LOG_INFO, "Monitor stopped");
