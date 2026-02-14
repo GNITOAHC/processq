@@ -98,6 +98,7 @@ int update_child_pid (pid_t parent_pid, pid_t new_child_pid) {
     size_t len = 0;
     if (getline(&cmd, &len, file) == -1) {
         perror("getline cmd in update");
+        free(cmd);
         fclose(file);
         return -1;
     }
