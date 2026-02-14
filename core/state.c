@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -27,14 +28,14 @@ static short validate_pid_dir (const char *piddir) {
     return 1; // Directory already exists
 }
 
-int write_pidfile (pid_t pid, pid_t monitor_pid, char *cmd) {
+int write_pidfile (pid_t parent_pid, pid_t child_pid, char *cmd) {
     /* piddir and pidfile */
     char piddir[MAX_PATH_LEN];
     snprintf(piddir, MAX_PATH_LEN, "%s/.local/state/processq", getenv("HOME"));
     if (validate_pid_dir(piddir) == 0) return -1;
 
     char pidfile[MAX_PATH_LEN];
-    snprintf(pidfile, MAX_PATH_LEN, "%s/.local/state/processq/%d", getenv("HOME"), pid);
+    snprintf(pidfile, MAX_PATH_LEN, "%s/.local/state/processq/%d", getenv("HOME"), parent_pid);
 
     /* Check pidfile path */
     struct stat st = { 0 };
@@ -47,8 +48,8 @@ int write_pidfile (pid_t pid, pid_t monitor_pid, char *cmd) {
         return -1;
     }
 
-    /* Write monitor_pid and command to the pidfile */
-    if (dprintf(fd, "%d\n%s\n", monitor_pid, cmd) < 0) {
+    /* Write child_pid and command to the pidfile */
+    if (dprintf(fd, "%d\n%s\n", child_pid, cmd) < 0) {
         perror("write to pidfile");
         return -1;
     }
@@ -58,9 +59,9 @@ int write_pidfile (pid_t pid, pid_t monitor_pid, char *cmd) {
     return 0;
 }
 
-int remove_pidfile (pid_t pid) {
+int remove_pidfile (pid_t parent_pid) {
     char pidfile[MAX_PATH_LEN];
-    snprintf(pidfile, MAX_PATH_LEN, "%s/.local/state/processq/%d", getenv("HOME"), pid);
+    snprintf(pidfile, MAX_PATH_LEN, "%s/.local/state/processq/%d", getenv("HOME"), parent_pid);
 
     /* Remove the pidfile */
     if (remove(pidfile) != 0) {
@@ -69,6 +70,66 @@ int remove_pidfile (pid_t pid) {
     }
 
     return 0;
+}
+
+int update_child_pid (pid_t parent_pid, pid_t new_child_pid) {
+    char pidfile[MAX_PATH_LEN];
+    snprintf(pidfile, MAX_PATH_LEN, "%s/.local/state/processq/%d", getenv("HOME"), parent_pid);
+
+    /* Read existing command from the file */
+    FILE *file = fopen(pidfile, "r");
+    if (file == NULL) {
+        perror("fopen for update");
+        return -1;
+    }
+
+    /* Skip the first line (old child_pid) */
+    char *old_child_line = NULL;
+    size_t old_len       = 0;
+    if (getline(&old_child_line, &old_len, file) == -1) {
+        perror("getline old child_pid");
+        fclose(file);
+        return -1;
+    }
+    free(old_child_line);
+
+    /* Read command (second line) */
+    char *cmd  = NULL;
+    size_t len = 0;
+    if (getline(&cmd, &len, file) == -1) {
+        perror("getline cmd in update");
+        free(cmd);
+        fclose(file);
+        return -1;
+    }
+    fclose(file);
+
+    /* Remove trailing newline from cmd if present */
+    size_t cmd_len = strlen(cmd);
+    if (cmd_len > 0 && cmd[cmd_len - 1] == '\n') { cmd[cmd_len - 1] = '\0'; }
+
+    /* Rewrite the file with new child_pid */
+    const int fd = open(pidfile, O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd < 0) {
+        perror("open for update");
+        free(cmd);
+        return -1;
+    }
+
+    if (dprintf(fd, "%d\n%s\n", new_child_pid, cmd) < 0) {
+        perror("write updated pidfile");
+        free(cmd);
+        close(fd);
+        return -1;
+    }
+
+    free(cmd);
+    close(fd);
+    return 0;
+}
+
+static int sort_pidinfo (const void *a, const void *b) {
+    return ((pidinfo_t *)a)->parent_pid - ((pidinfo_t *)b)->parent_pid;
 }
 
 pidinfo_t *read_pidfiles (int *array_len) {
@@ -97,16 +158,16 @@ pidinfo_t *read_pidfiles (int *array_len) {
             perror("fopen");
             return NULL;
         }
-        /* Read monitor_pid (first line) */
-        char *monitor_pid_line = NULL;
-        size_t monitor_len     = 0;
-        if (getline(&monitor_pid_line, &monitor_len, file) == -1) {
-            perror("getline monitor_pid");
+        /* Read child_pid (first line) */
+        char *child_pid_line = NULL;
+        size_t child_len     = 0;
+        if (getline(&child_pid_line, &child_len, file) == -1) {
+            perror("getline child_pid");
             fclose(file);
             return NULL;
         }
-        pid_t monitor_pid = atoi(monitor_pid_line);
-        free(monitor_pid_line);
+        pid_t child_pid = atoi(child_pid_line);
+        free(child_pid_line);
 
         /* Read command (second line) */
         char *cmd  = NULL;
@@ -123,10 +184,11 @@ pidinfo_t *read_pidfiles (int *array_len) {
             pidinfos = (pidinfo_t *)realloc(pidinfos, sizeof(pidinfo_t) * info_cap);
         }
 
+        /* pid from filename is the parent_pid (monitor), child_pid is from line 1 */
         pidinfos[info_len++] = (pidinfo_t) {
-            .pid         = pid,
-            .monitor_pid = monitor_pid,
-            .cmd         = cmd,
+            .parent_pid = pid,
+            .child_pid  = child_pid,
+            .cmd        = cmd,
         };
 
         /* printf("PID: %d, CMD: %s\n", pid, cmd); */
@@ -137,5 +199,6 @@ pidinfo_t *read_pidfiles (int *array_len) {
 
     *array_len = info_len;
 
+    qsort(pidinfos, info_len, sizeof(pidinfo_t), sort_pidinfo);
     return pidinfos;
 }

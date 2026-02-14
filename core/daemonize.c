@@ -141,8 +141,9 @@ pid_t daemonize (char *cmd, char *path_out, char *path_err, bool restart) {
 
     signal(SIGTERM, handle_stop_signal);
     signal(SIGINT, handle_stop_signal);
-    /* Store monitor PID for child to record */
-    pid_t monitor_pid = getpid();
+    /* Store parent (monitor) PID - this is used as the state filename */
+    pid_t parent_pid      = getpid();
+    short first_iteration = 1;
 
     /* Monitor loop for restarting the child process */
     while (1) {
@@ -150,6 +151,22 @@ pid_t daemonize (char *cmd, char *path_out, char *path_err, bool restart) {
         if (pid < 0) { exit(EXIT_FAILURE); }
 
         if (pid > 0) {
+            /* Parent (monitor) process */
+            if (first_iteration) {
+                /* Write pidfile on first iteration */
+                if (write_pidfile(parent_pid, pid, cmd) < 0) {
+                    perror("write_pidfile");
+                    exit(EXIT_FAILURE);
+                }
+                first_iteration = 0;
+            } else {
+                /* Update child_pid on subsequent iterations (restarts) */
+                if (update_child_pid(parent_pid, pid) < 0) {
+                    perror("update_child_pid");
+                    exit(EXIT_FAILURE);
+                }
+            }
+
             int status = 0;
 
             if (waitpid(pid, &status, 0) == -1) {
@@ -159,29 +176,25 @@ pid_t daemonize (char *cmd, char *path_out, char *path_err, bool restart) {
 
             log_exit_status(path_err, status);
 
-            if (remove_pidfile(pid) != 0) {
-                perror("remove_pidfile error");
-                exit(EXIT_FAILURE);
-            }
-
             if (restart && !stop_requested) {
                 log(path_err, LOG_INFO, "Restarting process in 5 seconds");
                 sleep(5);
                 continue;
             }
+
+            /* Clean up pidfile when monitor exits */
+            if (remove_pidfile(parent_pid) != 0) {
+                perror("remove_pidfile error");
+                /* Continue with exit even if remove fails */
+            }
+
             log(path_err, LOG_INFO, "Monitor stopped");
             exit(EXIT_SUCCESS);
         }
         break; /* Child process breaks out of the loop */
     }
 
-    /* In daemonize, monitor is the parent after third fork */
-    if (write_pidfile(getpid(), monitor_pid, cmd) < 0) {
-        perror("write_pidfile");
-        exit(EXIT_FAILURE);
-    }
-
-    /* Redirect file descriptors */
+    /* Child process: redirect file descriptors and exec */
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
