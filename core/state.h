@@ -29,5 +29,8 @@ int write_pidfile(pid_t parent_pid, pid_t child_pid, char *cmd);
 int remove_pidfile(pid_t parent_pid);
 int update_child_pid(pid_t parent_pid, pid_t new_child_pid);
 
-/* pidinfo & pidinfo.cmd should be freed by the caller */
+/*
+ * pidinfo & pidinfo.cmd should be freed by the caller
+ * returned array is allready sorted by parent_pid
+ */
 pidinfo_t *read_pidfiles(int *);

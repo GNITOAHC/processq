@@ -105,9 +105,7 @@ int update_child_pid (pid_t parent_pid, pid_t new_child_pid) {
 
     /* Remove trailing newline from cmd if present */
     size_t cmd_len = strlen(cmd);
-    if (cmd_len > 0 && cmd[cmd_len - 1] == '\n') {
-        cmd[cmd_len - 1] = '\0';
-    }
+    if (cmd_len > 0 && cmd[cmd_len - 1] == '\n') { cmd[cmd_len - 1] = '\0'; }
 
     /* Rewrite the file with new child_pid */
     const int fd = open(pidfile, O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
@@ -127,6 +125,10 @@ int update_child_pid (pid_t parent_pid, pid_t new_child_pid) {
     free(cmd);
     close(fd);
     return 0;
+}
+
+static int sort_pidinfo (const void *a, const void *b) {
+    return ((pidinfo_t *)a)->parent_pid - ((pidinfo_t *)b)->parent_pid;
 }
 
 pidinfo_t *read_pidfiles (int *array_len) {
@@ -196,5 +198,6 @@ pidinfo_t *read_pidfiles (int *array_len) {
 
     *array_len = info_len;
 
+    qsort(pidinfos, info_len, sizeof(pidinfo_t), sort_pidinfo);
     return pidinfos;
 }

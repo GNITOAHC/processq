@@ -10,21 +10,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static int sort_pidinfo (const void *a, const void *b) {
-    return ((pidinfo_t *)a)->parent_pid - ((pidinfo_t *)b)->parent_pid;
-}
-
 int stop (const int stop_idx) {
     int count = 0;
 
-    pidinfo_t *pidinfo = read_pidfiles(&count);
-    if (pidinfo == NULL) {
+    pidinfo_t *pidinfos = read_pidfiles(&count);
+    if (pidinfos == NULL) {
         perror("read_pidfiles");
         return -1;
     }
 
-    qsort(pidinfo, count, sizeof(pidinfo_t), sort_pidinfo);
-    const pidinfo_t *stop_pidinfo = &pidinfo[stop_idx];
+    const pidinfo_t *stop_pidinfo = &pidinfos[stop_idx];
 
     printf("STOPPING: [%d] Parent: %d, Child: %d, CMD: %s", stop_idx, stop_pidinfo->parent_pid,
            stop_pidinfo->child_pid, stop_pidinfo->cmd);
