@@ -28,7 +28,7 @@ static short validate_pid_dir (const char *piddir) {
     return 1; // Directory already exists
 }
 
-int write_pidfile (pid_t parent_pid, pid_t child_pid, char *cmd) {
+int write_pidfile (pid_t parent_pid, pid_t child_pid, char *cmd, char *workdir, char *logdir) {
     /* piddir and pidfile */
     char piddir[MAX_PATH_LEN];
     snprintf(piddir, MAX_PATH_LEN, "%s/.local/state/processq", getenv("HOME"));
@@ -48,8 +48,20 @@ int write_pidfile (pid_t parent_pid, pid_t child_pid, char *cmd) {
         return -1;
     }
 
+    /* Fall back to CWD if workdir is NULL */
+    char cwd_buf[MAX_PATH_LEN];
+    char *effective_workdir = workdir;
+    if (effective_workdir == NULL) {
+        if (getcwd(cwd_buf, sizeof(cwd_buf)) != NULL) {
+            effective_workdir = cwd_buf;
+        } else {
+            effective_workdir = ".";
+        }
+    }
+
     /* Write child_pid and command to the pidfile */
-    if (dprintf(fd, "%d\n%s\n", child_pid, cmd) < 0) {
+    if (dprintf(fd, "%d\n%s\n%s\n%s\n", child_pid, cmd, effective_workdir, logdir ? logdir : "") <
+        0) {
         perror("write to pidfile");
         return -1;
     }
@@ -102,28 +114,63 @@ int update_child_pid (pid_t parent_pid, pid_t new_child_pid) {
         fclose(file);
         return -1;
     }
+
+    /* Read workdir (third line) */
+    char *workdir      = NULL;
+    size_t workdir_len = 0;
+    if (getline(&workdir, &workdir_len, file) == -1) {
+        perror("getline workdir in update");
+        free(cmd);
+        fclose(file);
+        return -1;
+    }
+
+    /* Read logdir (fourth line) */
+    char *logdir      = NULL;
+    size_t logdir_len = 0;
+    if (getline(&logdir, &logdir_len, file) == -1) {
+        perror("getline logdir in update");
+        free(cmd);
+        free(workdir);
+        fclose(file);
+        return -1;
+    }
     fclose(file);
 
-    /* Remove trailing newline from cmd if present */
+    /* Remove trailing newlines */
     size_t cmd_len = strlen(cmd);
     if (cmd_len > 0 && cmd[cmd_len - 1] == '\n') { cmd[cmd_len - 1] = '\0'; }
+    size_t workdir_strlen = strlen(workdir);
+    if (workdir_strlen > 0 && workdir[workdir_strlen - 1] == '\n') {
+        workdir[workdir_strlen - 1] = '\0';
+    }
+    size_t logdir_strlen = strlen(logdir);
+    if (logdir_strlen > 0 && logdir[logdir_strlen - 1] == '\n') {
+        logdir[logdir_strlen - 1] = '\0';
+    }
 
     /* Rewrite the file with new child_pid */
     const int fd = open(pidfile, O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         perror("open for update");
         free(cmd);
+        free(workdir);
+        free(logdir);
         return -1;
     }
 
-    if (dprintf(fd, "%d\n%s\n", new_child_pid, cmd) < 0) {
+    if (dprintf(fd, "%d\n%s\n%s\n%s\n", new_child_pid, cmd, workdir, logdir) < 0) {
         perror("write updated pidfile");
         free(cmd);
+        free(workdir);
+        free(logdir);
         close(fd);
         return -1;
     }
 
     free(cmd);
+    free(workdir);
+    free(logdir);
     close(fd);
     return 0;
 }
@@ -178,6 +225,37 @@ pidinfo_t *read_pidfiles (int *array_len) {
             return NULL;
         }
 
+        /* Read workdir (third line) */
+        char *workdir      = NULL;
+        size_t workdir_len = 0;
+        if (getline(&workdir, &workdir_len, file) == -1) {
+            perror("getline workdir");
+            free(cmd);
+            fclose(file);
+            return NULL;
+        }
+        /* Strip trailing newline from workdir */
+        size_t workdir_strlen = strlen(workdir);
+        if (workdir_strlen > 0 && workdir[workdir_strlen - 1] == '\n') {
+            workdir[workdir_strlen - 1] = '\0';
+        }
+
+        /* Read logdir (fourth line) */
+        char *logdir      = NULL;
+        size_t logdir_len = 0;
+        if (getline(&logdir, &logdir_len, file) == -1) {
+            perror("getline logdir");
+            free(cmd);
+            free(workdir);
+            fclose(file);
+            return NULL;
+        }
+        /* Strip trailing newline from logdir */
+        size_t logdir_strlen = strlen(logdir);
+        if (logdir_strlen > 0 && logdir[logdir_strlen - 1] == '\n') {
+            logdir[logdir_strlen - 1] = '\0';
+        }
+
         /* Resize the pidinfos array if ++len == cap */
         if (info_len + 1 == info_cap) {
             info_cap *= 2;
@@ -189,6 +267,8 @@ pidinfo_t *read_pidfiles (int *array_len) {
             .parent_pid = pid,
             .child_pid  = child_pid,
             .cmd        = cmd,
+            .workdir    = workdir,
+            .logdir     = logdir,
         };
 
         /* printf("PID: %d, CMD: %s\n", pid, cmd); */

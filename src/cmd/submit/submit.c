@@ -81,7 +81,7 @@ int handle_submit_command (int argc, char *argv[], void *config) {
     }
 
     printf("%s Executing: %s\n", icon_exe, remaining);
-    if (submit((subp_t) { .cmd = remaining, .outdir = outdir, .restart = restart }) < 1) {
+    if (submit((subp_t) { .cmd = remaining, .logdir = outdir, .restart = restart }) < 1) {
         perror("submit");
         return 1;
     }

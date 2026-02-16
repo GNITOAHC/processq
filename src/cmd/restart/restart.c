@@ -15,14 +15,14 @@
 #include "../../../render/icons.h"
 #include "./restart.h"
 
-static char *outdir     = NULL;
+static char *logdir     = NULL;
 static int restart_flag = 0;
 
 static void print_helper (const char *program_name) {
     printf("Usage: %s [OPTIONS] [RESTART_INDEX]\n\n", program_name);
     static char options_usage[] = "Options:\n"
                                   "  -h, --help     \t\tShow this help message\n"
-                                  "  -o, --out DIR  \t\tOutput directory\n"
+                                  "  -o, --out DIR  \t\tLog output directory\n"
                                   "  -r, --restart  \t\tRestart on program exit\n";
     printf("%s\n", options_usage);
 }
@@ -41,8 +41,8 @@ static int parse_options (int argc, char *argv[]) {
         switch (opt) {
             case 'h': print_helper(argv[0]); return 0;
             case 'o':
-                outdir = optarg;
-                printf("Output directory: %s\n", outdir);
+                logdir = optarg;
+                printf("Log output directory: %s\n", logdir);
                 break;
             case 'r':
                 printf("Restart on exit enabled.\n");
@@ -55,7 +55,8 @@ static int parse_options (int argc, char *argv[]) {
     return optind;
 }
 
-static int restart (const int restart_idx, const pid_t pid, const char *cmd) {
+static int restart (const int restart_idx, const pid_t pid, const char *cmd, const char *workdir,
+                    const char *state_logdir) {
     /* Terminate the existing process */
     if (kill(pid, SIGTERM) < 0) {
         perror("kill");
@@ -73,9 +74,15 @@ static int restart (const int restart_idx, const pid_t pid, const char *cmd) {
     memcpy(cmd_copy, cmd, cmd_len);
     cmd_copy[cmd_len] = '\0';
     printf("%s Executing: %s\n", icon_exe, cmd_copy);
+
+    /* Use user-specified logdir if provided, otherwise use logdir from state file */
+    char *effective_logdir = logdir;
+    if (effective_logdir == NULL) { effective_logdir = (char *)state_logdir; }
+
     if (submit((subp_t) {
             .cmd     = cmd_copy,
-            .outdir  = outdir,
+            .logdir  = effective_logdir,
+            .workdir = (char *)workdir,
             .restart = restart_flag,
         }) < 1) {
         perror("submit");
@@ -130,7 +137,8 @@ int handle_restart_command (int argc, char *argv[], void *config) {
     int c = getchar();
     if (c == 'y' || c == 'Y') {
         printf("Restarting process...\n");
-        return restart(restart_idx, restart_pidinfo->child_pid, restart_pidinfo->cmd);
+        return restart(restart_idx, restart_pidinfo->child_pid, restart_pidinfo->cmd,
+                       restart_pidinfo->workdir, restart_pidinfo->logdir);
     } else {
         printf("Process not restarted\n");
         exit(EXIT_FAILURE);
