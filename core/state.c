@@ -162,7 +162,12 @@ pidinfo_t *read_pidfiles (int *array_len) {
         char *child_pid_line = NULL;
         size_t child_len     = 0;
         if (getline(&child_pid_line, &child_len, file) == -1) {
-            perror("getline child_pid");
+            if (ferror(file)) {
+                perror("getline child_pid");
+            } else {
+                fprintf(stderr, "read_pidfiles: empty or corrupted pid file: %s\n", pidfile);
+            }
+            free(child_pid_line);
             fclose(file);
             return NULL;
         }
@@ -173,7 +178,12 @@ pidinfo_t *read_pidfiles (int *array_len) {
         char *cmd  = NULL;
         size_t len = 0;
         if (getline(&cmd, &len, file) == -1) {
-            perror("getline cmd");
+            if (ferror(file)) {
+                perror("getline cmd");
+            } else {
+                fprintf(stderr, "read_pidfiles: missing command in pid file: %s\n", pidfile);
+            }
+            free(cmd);
             fclose(file);
             return NULL;
         }

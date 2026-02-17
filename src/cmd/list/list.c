@@ -37,7 +37,7 @@ int handle_list_command (int argc, char *argv[], void *config) {
 
     printf("LIST COMMAND\n");
     if (list() < 0) {
-        perror("list commands failed");
+        /* Error already reported by list() */
         exit(EXIT_FAILURE);
     }
     return 0;
