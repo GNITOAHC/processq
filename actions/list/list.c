@@ -29,7 +29,7 @@ int list () {
 
     pidinfo_t *pidinfos = read_pidfiles(&count);
     if (pidinfos == NULL) {
-        perror("read_pidfiles");
+        /* Error already reported by read_pidfiles */
         return -1;
     }
 
