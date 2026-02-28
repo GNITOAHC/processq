@@ -4,7 +4,7 @@
 
 /* subp_t: submit() parameters */
 typedef struct {
-    char *cmd, *outdir;
+    char *cmd, *logdir, *workdir;
     bool restart;
 } subp_t;
 

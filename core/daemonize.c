@@ -105,7 +105,30 @@ static short validate_path (const char *path) {
     return 1; /* Success */
 }
 
-pid_t daemonize (char *cmd, char *path_out, char *path_err, bool restart) {
+static char *log_dir (const char *path) {
+    if (path == NULL) return NULL;
+
+    const char *last_slash = strrchr(path, '/');
+    if (last_slash == NULL) return strdup("."); /* Current directory */
+
+    size_t dir_len = last_slash - path;
+    if (dir_len == 0) return strdup("/"); /* Root directory */
+
+    char *dir = malloc(dir_len + 1);
+    if (dir == NULL) return NULL;
+
+    strncpy(dir, path, dir_len);
+    dir[dir_len] = '\0';
+    return dir;
+}
+
+pid_t daemonize (daemonize_args_t *args) {
+    char *cmd      = args->cmd;
+    char *path_out = args->path_out;
+    char *path_err = args->path_err;
+    char *workdir  = args->workdir;
+    bool restart   = args->restart;
+
     pid_t pid;
 
     /* Make sure the output path's parent directory exists */
@@ -154,7 +177,7 @@ pid_t daemonize (char *cmd, char *path_out, char *path_err, bool restart) {
             /* Parent (monitor) process */
             if (first_iteration) {
                 /* Write pidfile on first iteration */
-                if (write_pidfile(parent_pid, pid, cmd) < 0) {
+                if (write_pidfile(parent_pid, pid, cmd, workdir, log_dir(path_out)) < 0) {
                     perror("write_pidfile");
                     exit(EXIT_FAILURE);
                 }
@@ -220,6 +243,14 @@ pid_t daemonize (char *cmd, char *path_out, char *path_err, bool restart) {
     if (dup2(fd_err, STDERR_FILENO) < 0) {
         perror("dup2");
         exit(EXIT_FAILURE);
+    }
+
+    /* Change working directory if specified */
+    if (workdir != NULL) {
+        if (chdir(workdir) != 0) {
+            perror("chdir");
+            exit(EXIT_FAILURE);
+        }
     }
 
     execl("/bin/bash", "bash", "-c", cmd, (char *)NULL);
