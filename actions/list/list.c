@@ -44,3 +44,37 @@ int list () {
 
     return 0;
 }
+
+int list_by_id (const long id) {
+    int count = 0;
+
+    pidinfo_t *pidinfos = read_pidfiles(&count);
+    if (pidinfos == NULL) {
+        fprintf(stderr, "No process found with ID %ld\n", id);
+        return -1;
+    }
+
+    if (count == 0) {
+        fprintf(stderr, "No processes found\n");
+        free(pidinfos);
+        return -1;
+    }
+
+    /* Check if ID is within bounds */
+    if (id < 0 || id >= count) {
+        fprintf(stderr, "No process found with ID %ld\n", id);
+        return -1;
+    }
+
+    /* Get the process info */
+    const pidinfo_t *pidinfo = &pidinfos[id];
+    printf("[%ld] Parent: %d, Child: %d, CMD: %s\nWorking Directory: %s\nLog Directory: %s\n", id,
+           pidinfo->parent_pid, pidinfo->child_pid, pidinfo->cmd, pidinfo->workdir,
+           pidinfo->logdir);
+
+    for (int i = 0; i < count; ++i)
+        free(pidinfos[i].cmd);
+    free(pidinfos);
+
+    return 0;
+}
