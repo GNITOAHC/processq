@@ -89,6 +89,9 @@ static int restart (const int restart_idx, const pid_t pid, const char *cmd, con
         return 1;
     }
 
+    /* Free the duplicated command string */
+    free(cmd_copy);
+
     return 0;
 }
 

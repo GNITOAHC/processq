@@ -11,7 +11,7 @@
  *   Line 1: child_pid (PID of the actual running process)
  *   Line 2: cmd (the command being executed)
  *   Line 3: full path to the working directory of the process
- *   Line 4: full path to the output log diretory
+ *   Line 4: full path to the output log directory
  *
  * Example file ~/.local/state/processq/12300:
  *   12345
