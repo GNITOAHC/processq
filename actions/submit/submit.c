@@ -44,13 +44,13 @@ static char *concat_path (char *str, ...) {
 }
 
 int submit (subp_t p) {
-    char outdir[MAX_PATH_LEN];
+    char logdir[MAX_PATH_LEN];
     char *cwd  = get_path();
     char *time = get_time();
 
-    if (p.outdir == NULL) {
-        snprintf(outdir, MAX_PATH_LEN, "%s", cwd);
-        p.outdir = outdir;
+    if (p.logdir == NULL) {
+        snprintf(logdir, MAX_PATH_LEN, "%s", cwd);
+        p.logdir = logdir;
     }
     free(cwd);
 
@@ -59,14 +59,21 @@ int submit (subp_t p) {
     for (int i = 0; i < strlen(formatted_time) + 1; ++i)
         if (formatted_time[i] == ' ') formatted_time[i] = '_';
 
-    char *path_out = concat_path(p.outdir, "/", formatted_time, "_out", NULL);
-    char *path_err = concat_path(p.outdir, "/", formatted_time, "_err", NULL);
+    char *path_out = concat_path(p.logdir, "/", formatted_time, "_out", NULL);
+    char *path_err = concat_path(p.logdir, "/", formatted_time, "_err", NULL);
     free(formatted_time);
 
     printf("OUT: %s\n", path_out);
     printf("ERR: %s\n", path_err);
 
-    pid_t pid = daemonize(p.cmd, path_out, path_err, p.restart);
+    daemonize_args_t args = {
+        .cmd      = p.cmd,
+        .path_out = path_out,
+        .path_err = path_err,
+        .workdir  = p.workdir,
+        .restart  = p.restart,
+    };
+    pid_t pid = daemonize(&args);
 
     free(path_out);
     free(path_err);
