@@ -140,8 +140,18 @@ int handle_restart_command (int argc, char *argv[], void *config) {
     int c = getchar();
     if (c == 'y' || c == 'Y') {
         printf("Restarting process...\n");
-        return restart(restart_idx, restart_pidinfo->child_pid, restart_pidinfo->cmd,
-                       restart_pidinfo->workdir, restart_pidinfo->logdir);
+        int restart_result = restart(restart_idx, restart_pidinfo->child_pid, restart_pidinfo->cmd,
+                                     restart_pidinfo->workdir, restart_pidinfo->logdir);
+
+        /* Free pidinfos and its dynamically allocated fields before returning */
+        for (int i = 0; i < count; i++) {
+            free(pidinfos[i].cmd);
+            free(pidinfos[i].workdir);
+            free(pidinfos[i].logdir);
+        }
+        free(pidinfos);
+
+        return restart_result;
     } else {
         printf("Process not restarted\n");
         exit(EXIT_FAILURE);
