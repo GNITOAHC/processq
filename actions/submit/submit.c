@@ -16,13 +16,6 @@ static char *get_path () {
     return cwd;
 }
 
-/* Should NOT free the returned pointer */
-static char *get_time () {
-    time_t now     = time(NULL);
-    char *time_str = ctime(&now); /* time_str is ended with \n\0 */
-    return time_str;
-}
-
 static char *concat_path (char *str, ...) {
     va_list args;
     va_start(args, str);
@@ -44,24 +37,34 @@ static char *concat_path (char *str, ...) {
 }
 
 int submit (subp_t p) {
-    char logdir[MAX_PATH_LEN];
-    char *cwd  = get_path();
-    char *time = get_time();
+    char *cwd = get_path();
+    if (cwd == NULL) {
+        perror("submit: get_path");
+        return -1;
+    }
 
+    char absolute_logdir[MAX_PATH_LEN];
     if (p.logdir == NULL) {
-        snprintf(logdir, MAX_PATH_LEN, "%s", cwd);
-        p.logdir = logdir;
+        /* Case 1: No logdir provided, use CWD. */
+        strncpy(absolute_logdir, cwd, sizeof(absolute_logdir) - 1);
+        absolute_logdir[sizeof(absolute_logdir) - 1] = '\0';
+    } else if (p.logdir[0] == '/') {
+        /* Case 2: Absolute path provided. */
+        strncpy(absolute_logdir, p.logdir, sizeof(absolute_logdir) - 1);
+        absolute_logdir[sizeof(absolute_logdir) - 1] = '\0';
+    } else {
+        /* Case 3: Relative path provided. Prepend CWD. */
+        snprintf(absolute_logdir, sizeof(absolute_logdir), "%s/%s", cwd, p.logdir);
     }
     free(cwd);
 
-    char *formatted_time = (char *)malloc(strlen(time) - 2);
-    strncpy(formatted_time, time, strlen(time) - 2);
-    for (int i = 0; i < strlen(formatted_time) + 1; ++i)
-        if (formatted_time[i] == ' ') formatted_time[i] = '_';
+    time_t now         = time(NULL);
+    struct tm *tm_info = localtime(&now);
+    char formatted_time[20]; /* yyyy-MM-dd-HH-mm-ss\0 */
+    strftime(formatted_time, sizeof(formatted_time), "%Y-%m-%d-%H-%M-%S", tm_info);
 
-    char *path_out = concat_path(p.logdir, "/", formatted_time, "_out", NULL);
-    char *path_err = concat_path(p.logdir, "/", formatted_time, "_err", NULL);
-    free(formatted_time);
+    char *path_out = concat_path(absolute_logdir, "/", formatted_time, "_out", NULL);
+    char *path_err = concat_path(absolute_logdir, "/", formatted_time, "_err", NULL);
 
     printf("OUT: %s\n", path_out);
     printf("ERR: %s\n", path_err);

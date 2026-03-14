@@ -16,6 +16,7 @@
  * Example file ~/.local/state/processq/12300:
  *   12345
  *   sleep 100
+ *   /home/username/projects/a
  *   /home/username/projects/a/logs
  *
  * To stop a restartable daemon, send SIGTERM to parent_pid (the monitor).
