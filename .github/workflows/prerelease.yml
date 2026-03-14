@@ -66,6 +66,7 @@ jobs:
         shell: bash
         env:
           CC: ${{ matrix.cc }}
+          VERSION: ${{ needs.tag.outputs.tag }}
         run: |
           chmod +x compile.sh
           ./compile.sh
