@@ -1,7 +1,10 @@
 #!/bin/bash
 mkdir -p obj bin
 
-rm obj/*.o
+# Initialize and update submodules (e.g., third_party/libargparse)
+# git submodule update --init --recursive
+
+rm -f obj/*.o
 
 CC=${CC:-gcc}
 VERSION_FLAG=${VERSION:+-DVERSION=\"$VERSION\"}
