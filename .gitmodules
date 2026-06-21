@@ -1,0 +1,3 @@
+[submodule "third_party/libargparse"]
+	path = third_party/libargparse
+	url = https://github.com/GNITOAHC/libargparse.git
