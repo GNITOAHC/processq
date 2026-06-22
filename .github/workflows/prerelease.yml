@@ -76,7 +76,7 @@ jobs:
       - name: Package Binary
         shell: bash
         run: |
-          VERSION="${{ github.ref_name }}-${{ needs.tag.outputs.tag }}"
+          VERSION="${{ needs.tag.outputs.tag }}"
           TARGET="queue"
           OS="${{ matrix.target_os }}"
           ARCH="${{ matrix.target_arch }}"
