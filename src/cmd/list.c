@@ -16,8 +16,6 @@ int handle_list_command (argparse_context_t *ctx) {
     }
 
     int id = cfg->id;
-    printf("list id: %d\n", (int)id);
-    return 0;
     if (id != -1) {
         if (list_by_id(id) < 0) {
             fprintf(stderr, "error: Failed to list process with ID %d\n", id);
