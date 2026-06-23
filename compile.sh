@@ -1,14 +1,20 @@
 #!/bin/bash
 mkdir -p obj bin
 
+# Initialize and update submodules (e.g., third_party/libargparse)
+# git submodule update --init --recursive
+
+rm -f obj/*.o
+
 CC=${CC:-gcc}
 VERSION_FLAG=${VERSION:+-DVERSION=\"$VERSION\"}
 
-$CC -c src/cmd/list/list.c -o obj/list.o
-$CC -c src/cmd/submit/submit.c -o obj/submit.o
-$CC -c src/cmd/stop/stop.c -o obj/stop.o
-$CC -c src/cmd/restart/restart.c -o obj/restart.o
-# $CC -c src/cmd/status/status.c -o build/status.o
+THIRD_PARTY_INCLUDE="-Ithird_party/libargparse/include"
+THIRD_PARTY_LIB="-Lthird_party/libargparse -largparse"
+
+cd third_party/libargparse && make && cd ../..
+
+$CC $THIRD_PARTY_INCLUDE -c src/cmd/amalgamation.c -o obj/cmd.o
 
 $CC -c core/daemonize.c -o obj/daemonize.o
 $CC -c core/state.c -o obj/state.o
@@ -20,6 +26,6 @@ $CC -c actions/list/list.c -o obj/action_list.o
 $CC -c actions/submit/submit.c -o obj/action_submit.o
 $CC -c actions/stop/stop.c -o obj/action_stop.o
 
-$CC $VERSION_FLAG -c src/main.c -o obj/main.o
+$CC $VERSION_FLAG -c src/main.c $THIRD_PARTY_INCLUDE -o obj/main.o
 
-$CC obj/*.o -o bin/main
+$CC obj/*.o $THIRD_PARTY_LIB -o bin/main

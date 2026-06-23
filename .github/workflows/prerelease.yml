@@ -3,7 +3,7 @@ name: Cross-Platform Build & Daily Pre-Release
 on:
   push:
     branches:
-      - main
+      - '**'
   workflow_dispatch: # Allow manual trigger
 
 permissions:
@@ -57,6 +57,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install Dependencies
         if: matrix.install_deps
@@ -66,7 +68,7 @@ jobs:
         shell: bash
         env:
           CC: ${{ matrix.cc }}
-          VERSION: ${{ needs.tag.outputs.tag }}
+          VERSION: ${{ github.ref_name }}-${{ needs.tag.outputs.tag }}
         run: |
           chmod +x compile.sh
           ./compile.sh
