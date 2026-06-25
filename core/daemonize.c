@@ -65,6 +65,7 @@ static void log (const char *path_err, enum log_level l, const char *message) {
 }
 
 static int mkdir_p (const char *path, mode_t _mode) {
+    (void)_mode;
     char cmd[1024];
     snprintf(cmd, sizeof(cmd), "mkdir -p \"%s\"", path);
     return system(cmd);
