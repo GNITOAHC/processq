@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 /* Should free the returned pointer */
-static char *get_path () {
+static char *get_path (void) {
     char *cwd = getcwd(NULL, 0);
     return cwd;
 }
